@@ -35,7 +35,31 @@ node verify.js
 
 This runs the same simulator the game uses and confirms that the correlation equals cos(a−b) to machine precision, that the quantum CHSH score is 2.8284, and that the classical script caps at 2.0.
 
+## Run it on Qollab (Qiskit + IonQ)
+
+`qollab/` is the same game packaged as a Qollab JS / Qiskit project. Upload that folder (or a zip of it) at qollab.xyz → New Project → Upload your own files. Press **Run** and pick a backend in Select QPU. A **Run it on …** button appears under the Bell score. It runs the four CHSH settings with Qiskit on that backend and shows the measured S (with its statistical error) next to Qiskit's exact 2√2.
+
+IonQ accepts one job per Run on Qollab, so all four settings go out as one 8-qubit circuit, each setting on its own pair of qubits.
+
+Rebuild the folder after changing `index.html` or `bell/`: `node build-qollab.cjs`.
+
+## Run the Bell test with Qiskit outside Qollab
+
+```
+pip install -r requirements.txt
+python -m bell.chsh                                   # Qiskit's BasicSimulator
+pip install qiskit-ionq && export IONQ_API_KEY=...    # optional: IonQ
+python -m bell.chsh --ionq simulator --noise aria-1   # IonQ cloud simulator with Aria noise
+```
+
+Tests: `python -m pytest tests` (Qiskit values, one-job packing, the bridge) and `node verify.js` (the game's own simulator).
+
 ## Files
 
-- `index.html` — the whole game (HTML + CSS + JS, ~28 KB)
-- `verify.js` — standalone physics check for the simulator
+- `index.html`: the whole standalone game (HTML + CSS + JS)
+- `verify.js`: standalone physics check for the game's simulator
+- `bell/chsh.py`: the Bell test in Qiskit (circuits, one-job packing, S)
+- `bell/bridge.py`: JSON bridge used by the Qollab build
+- `qollab-src/`: Qollab entry point, host, and project-page text; `build-qollab.cjs` assembles `qollab/`
+- `qollab/`: the built Qollab project (upload this)
+- `LICENSE`: MIT

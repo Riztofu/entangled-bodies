@@ -117,6 +117,18 @@ button.call[aria-pressed="true"]{border-color:var(--fg);background:var(--fg);col
 .note p{margin:0;font-size:15px;color:var(--muted)}
 .note p b, .note p strong{color:var(--fg)}
 footer{margin-top:30px;color:var(--muted);font-size:13px}
+.hw{border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
+.hw h3{margin:0 0 6px;font-family:var(--display);font-size:18px}
+.hw-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.hw-row label{font-size:14px;color:var(--muted)}
+.hw-row select{font:inherit;padding:4px 6px;margin-left:4px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+.hw-s{font-family:var(--display);font-size:34px;margin:12px 0 2px}
+.hw-s small{display:block;margin-top:4px;font-size:14px;color:var(--muted);font-family:var(--body)}
+.hw-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.hw-table th,.hw-table td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+.hw-table th:first-child,.hw-table td:first-child{text-align:left}
+.hw-table th{color:var(--muted);font-weight:600}
+.hw-wait{color:var(--muted);font-size:14px;margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -240,6 +252,12 @@ footer{margin-top:30px;color:var(--muted);font-size:13px}
       <button class="act" id="bellBtn">Run the Bell test</button>
       <p class="verdict" id="verdict">Any secret script — any list of pre-agreed answers, however clever — scores 2.00 at most. That's Bell's theorem (1964).</p>
       <button class="act ghost" id="resetBtn">Reset data</button>
+      <div class="hw" id="hwBox" hidden>
+        <h3 id="hwTitle">Now on a real quantum backend</h3>
+        <p class="subnote" id="hwNote"></p>
+        <div class="hw-row"><label for="hwShots">Shots <select id="hwShots"><option value="200">200</option><option value="500" selected>500</option><option value="1000">1000</option></select></label><button class="act" id="hwBtn">Run it</button></div>
+        <div id="hwResult" aria-live="polite"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -550,6 +568,54 @@ $('tourNext').addEventListener('click',function(){
   tourShow();
 });
 $('tourSkip').addEventListener('click',function(){$('tourBox').hidden=true;});
+
+// ---------- a real backend (the Qollab build attaches a host: Qiskit in the page + the Select QPU backend) ----------
+var host=null, hostInfo=null, hostJobUsed=false;
+function fmt(x){return (x>=0?'+':'−')+Math.abs(x).toFixed(3);}
+function showBackendResult(r){
+  // One standard error of S: each E from N poses has variance (1 − E²)/N.
+  var err=Math.sqrt(r.correlations.reduce(function(t,e){return t+(1-e*e)/r.shots;},0)), beat=r.S-2*err>2;
+  var rows=r.settings.map(function(st,k){
+    return '<tr><td>Alice '+st[0]+'° · Bob '+st[1]+'°</td><td>'+fmt(r.correlations[k])+'</td><td>'+fmt(r.exact_correlations[k])+'</td></tr>';
+  }).join('');
+  $('hwResult').innerHTML='<p class="hw-s">S = '+r.S.toFixed(2)+' <small>± '+err.toFixed(2)+' · '+r.shots+' poses per setting · '+hostInfo.label+'</small></p>'+
+    '<p class="verdict'+(beat?' beat':'')+'">'+(beat
+      ?'Above 2, even allowing for chance. No script could do that. This came from qubits on '+hostInfo.label+(hostInfo.ionq?', noise and all.':'.')
+      :'Not clearly above 2 this time'+(hostInfo.ionq?'. Noise can pull the score down; try more shots next Run.':'; try more shots.'))+'</p>'+
+    '<table class="hw-table"><thead><tr><th>Dials</th><th>Measured E</th><th>Qiskit exact</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<p class="hw-wait">Qiskit\'s exact answer is S = '+r.exact_S.toFixed(3)+' (the quantum maximum). Random sampling scatters around it by about ± '+err.toFixed(2)+'. All four settings ran as one '+(2*r.settings.length)+'-qubit job'+(r.seconds?' in '+r.seconds.toFixed(1)+' s':'')+'.</p>';
+}
+function runOnBackend(){
+  var btn=$('hwBtn');
+  if(hostInfo.ionq&&hostJobUsed){$('hwResult').innerHTML='<p class="hw-wait">Qollab gives you one IonQ job per Run. Press Stop, then Run again to send another.</p>';return;}
+  if(hostInfo.paid&&btn.dataset.confirm!=='yes'){btn.dataset.confirm='yes';btn.textContent='Click again to spend Qollab credits';return;}
+  btn.disabled=true;btn.textContent='Running…';
+  $('hwResult').innerHTML='<p class="hw-wait">Sent to '+hostInfo.label+'. '+(hostInfo.ionq?'IonQ simulates every shot with real-device noise, so this can take a minute.':'')+'</p>';
+  if(hostInfo.ionq)hostJobUsed=true;
+  host.run(+$('hwShots').value).then(function(r){
+    showBackendResult(r);
+  },function(err){
+    $('hwResult').innerHTML='<p class="hw-wait">That didn\'t work: '+String(err&&err.message||err).slice(0,200)+'</p>';
+  }).then(function(){
+    btn.disabled=hostInfo.ionq&&hostJobUsed;btn.dataset.confirm='';
+    btn.textContent=btn.disabled?'One IonQ job per Run':'Run it again';
+  });
+}
+window.entangledBodies={
+  attachHost:function(h){
+    host=h;
+    return host.describe().then(function(info){
+      hostInfo=info;
+      $('hwTitle').textContent='Now on '+info.label;
+      $('hwNote').textContent='The same four dial settings, run with Qiskit '+info.qiskit+' on the backend you picked in Select QPU. '+
+        (info.ionq?'IonQ takes one job per Run, so all four settings go out together as one 8-qubit circuit.':'Pick an IonQ simulator there to see real-device noise.');
+      $('hwBtn').textContent='Run it on '+info.short;
+      $('hwBox').hidden=false;
+      return info;
+    });
+  }
+};
+$('hwBtn').addEventListener('click',runOnBackend);
 
 // ---------- boot ----------
 function start(){

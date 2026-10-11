@@ -1,0 +1,2 @@
+qiskit>=2.0,<3
+# optional, for python -m bell.chsh --ionq ...: qiskit-ionq
