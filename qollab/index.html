@@ -1,0 +1,153 @@
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">A playable Bell test · simulated with real quantum math</div>
+  <h1>Entangled Bodies</h1>
+  <p class="lede">Two dancers each hold one half of an <strong>entangled pair</strong> — two tiny quantum objects created together that stay connected. When a dancer strikes a pose, their arm snaps <strong>up</strong> or <strong>down</strong> at random, like a coin flip — yet the two flips agree with each other. This game lets you test the obvious explanation ("they planned it in advance") and watch it fail.</p>
+</header>
+
+<section class="section panel tour" aria-label="Guided tour" id="tourBox">
+  <div class="tour-head">
+    <span class="eyebrow">Guided tour</span>
+    <span class="tour-step" id="tourCount"></span>
+  </div>
+  <p class="tour-text" id="tourText"></p>
+  <div class="tour-btns">
+    <button class="act" id="tourNext">Start the tour</button>
+    <button class="act ghost" id="tourSkip">Skip — let me explore</button>
+  </div>
+</section>
+
+<section class="section" aria-label="Source">
+  <div class="seg" role="group" aria-label="What the dancers share">
+    <button id="src-q" aria-pressed="true">Entangled pair</button>
+    <button id="src-c" aria-pressed="false">Secret script</button>
+    <button id="src-m" aria-pressed="false">Mystery box</button>
+  </div>
+  <p class="src-desc" id="srcDesc">The dancers share the Bell state |Φ⁺⟩ — four live amplitudes, honestly sampled on every pose.</p>
+</section>
+
+<section class="section panel" aria-label="Stage">
+  <div class="stage">
+    <div class="dancer alice">
+      <h3>Alice</h3>
+      <svg class="figure" viewBox="0 0 160 190" aria-label="Alice dancer figure">
+        <g stroke="var(--alice)" stroke-width="6" stroke-linecap="round" fill="none">
+          <circle cx="80" cy="38" r="18" fill="var(--surface)"/>
+          <line x1="80" y1="56" x2="80" y2="120"/>
+          <line x1="80" y1="120" x2="58" y2="172"/>
+          <line x1="80" y1="120" x2="102" y2="172"/>
+          <path d="M80 72 L56 94 L68 110"/>
+          <g id="armA" class="arm-sig" style="transform-origin:80px 72px">
+            <line x1="80" y1="72" x2="128" y2="72"/>
+            <circle cx="128" cy="72" r="5" fill="var(--alice)" stroke="none"/>
+          </g>
+        </g>
+      </svg>
+      <div class="dialrow">
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <path d="M23 3 A20 20 0 0 1 23 43" fill="none" stroke="var(--line)" stroke-width="3"/>
+          <line id="needleA" x1="23" y1="23" x2="23" y2="5" stroke="var(--alice)" stroke-width="3" stroke-linecap="round" style="transform-origin:23px 23px"/>
+          <circle cx="23" cy="23" r="3" fill="var(--fg)"/>
+        </svg>
+        <input type="range" id="angleA" min="0" max="180" value="0" step="5" aria-label="Alice measurement angle">
+        <span class="angle-read" id="readA">0°</span>
+      </div>
+      <div class="outcome" id="outA">no pose yet</div>
+    </div>
+
+    <div class="midcol">
+      <button class="act" id="poseBtn">Strike a pose</button>
+      <button class="act ghost" id="pose100Btn">Pose ×100</button>
+      <div class="callrow">
+        <span class="lbl">Call it:</span>
+        <button class="call" id="callSame" aria-pressed="false">same</button>
+        <button class="call" id="callDiff" aria-pressed="false">different</button>
+      </div>
+      <div class="callstat" id="callStat">predict before you pose</div>
+    </div>
+
+    <div class="dancer bob">
+      <h3>Bob</h3>
+      <svg class="figure" viewBox="0 0 160 190" aria-label="Bob dancer figure">
+        <g stroke="var(--bob)" stroke-width="6" stroke-linecap="round" fill="none">
+          <circle cx="80" cy="38" r="18" fill="var(--surface)"/>
+          <line x1="80" y1="56" x2="80" y2="120"/>
+          <line x1="80" y1="120" x2="58" y2="172"/>
+          <line x1="80" y1="120" x2="102" y2="172"/>
+          <path d="M80 72 L104 94 L92 110"/>
+          <g id="armB" class="arm-sig" style="transform-origin:80px 72px">
+            <line x1="80" y1="72" x2="32" y2="72"/>
+            <circle cx="32" cy="72" r="5" fill="var(--bob)" stroke="none"/>
+          </g>
+        </g>
+      </svg>
+      <div class="dialrow">
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <path d="M23 3 A20 20 0 0 1 23 43" fill="none" stroke="var(--line)" stroke-width="3"/>
+          <line id="needleB" x1="23" y1="23" x2="23" y2="5" stroke="var(--bob)" stroke-width="3" stroke-linecap="round" style="transform-origin:23px 23px"/>
+          <circle cx="23" cy="23" r="3" fill="var(--fg)"/>
+        </svg>
+        <input type="range" id="angleB" min="0" max="180" value="45" step="5" aria-label="Bob measurement angle">
+        <span class="angle-read" id="readB">45°</span>
+      </div>
+      <div class="outcome" id="outB">no pose yet</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="results">
+    <div class="panel chartbox">
+      <h2>The correlation fingerprint</h2>
+      <p class="subnote">Each dot: how often the arms matched at that dial gap (Δ). Entanglement traces a <b>curve</b>; the best possible script can only draw a <b>straight line</b>. They split hardest at Δ = 45°.</p>
+      <svg id="chart" viewBox="0 0 560 300" role="img" aria-label="Correlation versus angle difference"></svg>
+      <div class="tally"><span>poses: <b id="tShots">0</b></span><span>arms matched: <b id="tSame">–</b></span></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <div class="panel meterbox">
+      <h2>Bell score</h2>
+      <p class="subnote">One number that separates physics from fakery. Measures 300 poses at each of the four canonical dial settings (0°, 90° × 45°, 135°).</p>
+      <div class="meter-val"><span id="sVal">–</span> <small>of 2.83 max</small></div>
+      <div class="meter-track"><div class="meter-fill" id="sFill"></div></div>
+      <div class="meter-marks">
+        <span class="mark ceiling" style="left:66.7%">2.00<br>classical ceiling</span>
+        <span class="mark" style="left:94.3%">2.83<br>quantum limit</span>
+      </div>
+      <button class="act" id="bellBtn">Run the Bell test</button>
+      <p class="verdict" id="verdict">Any secret script — any list of pre-agreed answers, however clever — scores 2.00 at most. That's Bell's theorem (1964).</p>
+      <button class="act ghost" id="resetBtn">Reset data</button>
+      <div class="hw" id="hwBox" hidden>
+        <h3 id="hwTitle">Now on a real quantum backend</h3>
+        <p class="subnote" id="hwNote"></p>
+        <div class="hw-row"><label for="hwShots">Shots <select id="hwShots"><option value="200">200</option><option value="500" selected>500</option><option value="1000">1000</option></select></label><button class="act" id="hwBtn">Run it</button></div>
+        <div id="hwResult" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section panel" aria-label="Under the hood">
+  <h2>Under the hood</h2>
+  <p class="subnote">This is not an animation pretending to be quantum. The page holds the state's four amplitudes and re-expresses them in your current dial bases, live. Posing samples from |amplitude|², exactly as a quantum computer's readout would.</p>
+  <div class="hood-grid">
+    <svg id="ampSvg" width="320" height="150" viewBox="0 0 320 150" role="img" aria-label="Live amplitudes"></svg>
+    <p class="hood-note" id="hoodNote"></p>
+  </div>
+</section>
+
+<section class="section">
+  <h2 style="margin-bottom:12px">Field notes</h2>
+  <div class="notes">
+    <div class="note"><h3>1 · What a pose is</h3>
+      <p>A <b>qubit</b> is the quantum version of a bit — instead of being plainly 0 or 1, it holds an <b>amplitude</b> (a signed number whose square is a probability) for each. "Striking a pose" is a <b>measurement</b>: it forces each qubit to answer up (+1) or down (−1), along whatever direction its dial points. The dial matters because qubits, unlike coins, can be asked the question from any angle.</p></div>
+    <div class="note"><h3>2 · Spooky agreement</h3>
+      <p>Set both dials to the same angle — any angle — and the arms <b>always match</b>, even though each arm alone is a perfect 50/50 coin flip. <b>Entanglement</b> means the two qubits don't have separate answers written down anywhere; they share one joint state, so the randomness itself is shared.</p></div>
+    <div class="note"><h3>3 · Couldn't it be a script?</h3>
+      <p>Maybe the dancers just agreed on answers beforehand — a hidden script (physicists say <b>local hidden variables</b>). A script explains same-angle agreement fine. But turn the dials <i>apart</i> and watch the chart: scripts produce correlation that fades in a straight line, while entanglement fades as a cosine curve. At Δ = 45° the gap is undeniable.</p></div>
+    <div class="note"><h3>4 · The number that settles it</h3>
+      <p>The <b>Bell score (CHSH)</b> adds up correlations from four dial settings. John Bell proved in 1964 that every possible script tops out at <b>2</b>; entangled qubits reach <b>2√2 ≈ 2.83</b>. Real experiments confirming this won the <b>2022 Nobel Prize in Physics</b>. When your meter crosses the red line, you've reproduced it — on a simulated pair of qubits, with nothing up anyone's sleeve.</p></div>
+  </div>
+</section>
+
+<footer>Built for the Qollab × IonQ quantum hackathon. 2-qubit statevector simulation — 4 complex amplitudes, Ry-rotated measurement bases, honest Born-rule sampling.</footer>
+</div>
