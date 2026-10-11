@@ -179,8 +179,9 @@ function pose(){
 }
 $('poseBtn').addEventListener('click',pose);
 $('pose100Btn').addEventListener('click',function(){
-  var a=aVal(),b=bVal(),last=[1,1];
-  for(var k=0;k<100;k++){last=sample(a,b);record(a,b,last[0]*last[1]);}
+  var a=aVal(),b=bVal(),last=[1,1],matched=0;
+  for(var k=0;k<100;k++){last=sample(a,b);record(a,b,last[0]*last[1]);if(last[0]*last[1]>0)matched++;}
+  $('batchStat').textContent='100 poses at a '+fold(a-b)+'° gap: arms matched '+matched+' times ('+matched+'%). They\'re added to the chart below.';
   setArm($('armA'),last[0]);setArm($('armB'),last[1]);
   $('outA').textContent='last of 100: '+(last[0]>0?'UP':'DOWN');
   $('outB').textContent='last of 100: '+(last[1]>0?'UP':'DOWN');
@@ -210,7 +211,7 @@ $('resetBtn').addEventListener('click',function(){
   $('sVal').textContent='–';$('sFill').style.width='0%';
   $('verdict').textContent='Any secret script — any list of pre-agreed answers, however clever — scores 2.00 at most. That\'s Bell\'s theorem (1964).';
   $('verdict').className='verdict';
-  callsMade=0;callsRight=0;$('callStat').textContent='predict before you pose';clearCall();
+  callsMade=0;callsRight=0;$('callStat').textContent='predict before you pose';clearCall();$('batchStat').textContent='';
   setArm($('armA'),0);setArm($('armB'),0);
   $('outA').textContent='no pose yet';$('outB').textContent='no pose yet';
 });
@@ -223,6 +224,7 @@ var descs={
 };
 function setSource(s){
   source=s;
+  updateGap();
   $('src-q').setAttribute('aria-pressed',s==='quantum');
   $('src-c').setAttribute('aria-pressed',s==='classical');
   $('src-m').setAttribute('aria-pressed',s==='mystery');
@@ -246,7 +248,17 @@ $('src-c').addEventListener('click',function(){setSource('classical');});
 $('src-m').addEventListener('click',function(){setSource('mystery');});
 
 // ---------- live updates ----------
-function onDial(){setNeedles();drawAmps();}
+function updateGap(){
+  var gap=fold(aVal()-bVal()), q=Math.round(100*Math.pow(Math.cos(gap*D2R/2),2)), c=Math.round(100*(1-gap/180)), hint;
+  $('gapVal').textContent=gap+'°';
+  if(gap===0)hint='Same question: an entangled pair always matches.';
+  else if(gap===180)hint='Opposite questions: an entangled pair never matches.';
+  else if(source==='classical')hint='At this gap a script matches about '+c+'% of the time.';
+  else if(source==='mystery')hint='Entangled pair: about '+q+'% match. Script: about '+c+'%. Which one is it?';
+  else hint='At this gap an entangled pair matches about '+q+'% of the time.';
+  $('gapHint').textContent=hint;
+}
+function onDial(){setNeedles();drawAmps();updateGap();}
 angleA.addEventListener('input',onDial);
 angleB.addEventListener('input',onDial);
 
@@ -334,7 +346,7 @@ $('hwBtn').addEventListener('click',runOnBackend);
 
 // ---------- boot ----------
 function start(){
-  setNeedles();drawChart();drawAmps();updateTally();
+  setNeedles();drawChart();drawAmps();updateTally();updateGap();
   $('tourText').textContent='New here? This two-minute tour walks you through what the game is showing, one click at a time. No physics background needed.';
   $('tourCount').textContent='';
 }

@@ -129,6 +129,11 @@ footer{margin-top:30px;color:var(--muted);font-size:13px}
 .hw-table th:first-child,.hw-table td:first-child{text-align:left}
 .hw-table th{color:var(--muted);font-weight:600}
 .hw-wait{color:var(--muted);font-size:14px;margin:10px 0 0}
+.dialnote{font-size:12px;color:var(--muted);text-align:center;max-width:280px}
+.gapbox{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;margin-bottom:6px;max-width:220px}
+.gapbox b{font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+.gaphint{font-size:12px;color:var(--muted);line-height:1.35}
+.batchstat{color:var(--fg);font-weight:600;max-width:220px}
 </style>
 </head>
 <body>
@@ -188,10 +193,12 @@ footer{margin-top:30px;color:var(--muted);font-size:13px}
         <input type="range" id="angleA" min="0" max="180" value="0" step="5" aria-label="Alice measurement angle">
         <span class="angle-read" id="readA">0°</span>
       </div>
+      <div class="dialnote">Alice's dial: the angle she asks her qubit from</div>
       <div class="outcome" id="outA">no pose yet</div>
     </div>
 
     <div class="midcol">
+      <div class="gapbox"><span class="lbl">Gap between dials</span><b id="gapVal">45°</b><span class="gaphint" id="gapHint"></span></div>
       <button class="act" id="poseBtn">Strike a pose</button>
       <button class="act ghost" id="pose100Btn">Pose ×100</button>
       <div class="callrow">
@@ -200,6 +207,7 @@ footer{margin-top:30px;color:var(--muted);font-size:13px}
         <button class="call" id="callDiff" aria-pressed="false">different</button>
       </div>
       <div class="callstat" id="callStat">predict before you pose</div>
+      <div class="callstat batchstat" id="batchStat" aria-live="polite"></div>
     </div>
 
     <div class="dancer bob">
@@ -226,6 +234,7 @@ footer{margin-top:30px;color:var(--muted);font-size:13px}
         <input type="range" id="angleB" min="0" max="180" value="45" step="5" aria-label="Bob measurement angle">
         <span class="angle-read" id="readB">45°</span>
       </div>
+      <div class="dialnote">Bob's dial: the angle he asks his qubit from</div>
       <div class="outcome" id="outB">no pose yet</div>
     </div>
   </div>
@@ -469,8 +478,9 @@ function pose(){
 }
 $('poseBtn').addEventListener('click',pose);
 $('pose100Btn').addEventListener('click',function(){
-  var a=aVal(),b=bVal(),last=[1,1];
-  for(var k=0;k<100;k++){last=sample(a,b);record(a,b,last[0]*last[1]);}
+  var a=aVal(),b=bVal(),last=[1,1],matched=0;
+  for(var k=0;k<100;k++){last=sample(a,b);record(a,b,last[0]*last[1]);if(last[0]*last[1]>0)matched++;}
+  $('batchStat').textContent='100 poses at a '+fold(a-b)+'° gap: arms matched '+matched+' times ('+matched+'%). They\'re added to the chart below.';
   setArm($('armA'),last[0]);setArm($('armB'),last[1]);
   $('outA').textContent='last of 100: '+(last[0]>0?'UP':'DOWN');
   $('outB').textContent='last of 100: '+(last[1]>0?'UP':'DOWN');
@@ -500,7 +510,7 @@ $('resetBtn').addEventListener('click',function(){
   $('sVal').textContent='–';$('sFill').style.width='0%';
   $('verdict').textContent='Any secret script — any list of pre-agreed answers, however clever — scores 2.00 at most. That\'s Bell\'s theorem (1964).';
   $('verdict').className='verdict';
-  callsMade=0;callsRight=0;$('callStat').textContent='predict before you pose';clearCall();
+  callsMade=0;callsRight=0;$('callStat').textContent='predict before you pose';clearCall();$('batchStat').textContent='';
   setArm($('armA'),0);setArm($('armB'),0);
   $('outA').textContent='no pose yet';$('outB').textContent='no pose yet';
 });
@@ -513,6 +523,7 @@ var descs={
 };
 function setSource(s){
   source=s;
+  updateGap();
   $('src-q').setAttribute('aria-pressed',s==='quantum');
   $('src-c').setAttribute('aria-pressed',s==='classical');
   $('src-m').setAttribute('aria-pressed',s==='mystery');
@@ -536,7 +547,17 @@ $('src-c').addEventListener('click',function(){setSource('classical');});
 $('src-m').addEventListener('click',function(){setSource('mystery');});
 
 // ---------- live updates ----------
-function onDial(){setNeedles();drawAmps();}
+function updateGap(){
+  var gap=fold(aVal()-bVal()), q=Math.round(100*Math.pow(Math.cos(gap*D2R/2),2)), c=Math.round(100*(1-gap/180)), hint;
+  $('gapVal').textContent=gap+'°';
+  if(gap===0)hint='Same question: an entangled pair always matches.';
+  else if(gap===180)hint='Opposite questions: an entangled pair never matches.';
+  else if(source==='classical')hint='At this gap a script matches about '+c+'% of the time.';
+  else if(source==='mystery')hint='Entangled pair: about '+q+'% match. Script: about '+c+'%. Which one is it?';
+  else hint='At this gap an entangled pair matches about '+q+'% of the time.';
+  $('gapHint').textContent=hint;
+}
+function onDial(){setNeedles();drawAmps();updateGap();}
 angleA.addEventListener('input',onDial);
 angleB.addEventListener('input',onDial);
 
@@ -624,7 +645,7 @@ $('hwBtn').addEventListener('click',runOnBackend);
 
 // ---------- boot ----------
 function start(){
-  setNeedles();drawChart();drawAmps();updateTally();
+  setNeedles();drawChart();drawAmps();updateTally();updateGap();
   $('tourText').textContent='New here? This two-minute tour walks you through what the game is showing, one click at a time. No physics background needed.';
   $('tourCount').textContent='';
 }
