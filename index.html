@@ -242,7 +242,7 @@ footer{margin-top:30px;color:var(--muted);font-size:13px}
     </div>
     <div class="panel meterbox">
       <h2>Bell score</h2>
-      <p class="subnote">One number that separates physics from fakery. Measures 300 poses at each of the four canonical dial settings (0°, 90° × 45°, 135°).</p>
+      <p class="subnote">One number that separates physics from fakery. Measures 2000 poses at each of the four canonical dial settings (0°, 90° × 45°, 135°).</p>
       <div class="meter-val"><span id="sVal">–</span> <small>of 2.83 max</small></div>
       <div class="meter-track"><div class="meter-fill" id="sFill"></div></div>
       <div class="meter-marks">
@@ -476,17 +476,20 @@ $('pose100Btn').addEventListener('click',function(){
 });
 
 $('bellBtn').addEventListener('click',function(){
-  var settings=[[0,45,1],[90,45,1],[90,135,1],[0,135,-1]],S=0,N=300;
+  // 2000 poses per setting keeps chance scatter near ±0.04. The best script averages exactly 2.00,
+  // so a verdict needs S to clear 2 by three standard errors, or a lucky script would "win".
+  var settings=[[0,45,1],[90,45,1],[90,135,1],[0,135,-1]],S=0,N=2000,varS=0;
   settings.forEach(function(st){
     var sum=0;
     for(var k=0;k<N;k++){var r=sample(st[0],st[1]);sum+=r[0]*r[1];record(st[0],st[1],r[0]*r[1]);}
-    S+=st[2]*(sum/N);
+    var E=sum/N; S+=st[2]*E; varS+=(1-E*E)/N;
   });
-  $('sVal').textContent=S.toFixed(2);
+  var err=Math.sqrt(varS);
+  $('sVal').textContent=S.toFixed(2)+' ± '+err.toFixed(2);
   $('sFill').style.width=Math.max(0,Math.min(100,(S/3)*100))+'%';
   var v=$('verdict');
-  if(S>2.05){v.textContent='S = '+S.toFixed(2)+' — above the classical ceiling. No script, no pre-agreed answers, no local trick can score this. These two share one quantum state.';v.className='verdict beat';}
-  else{v.textContent='S = '+S.toFixed(2)+' — within classical reach. A humble script could do this; nothing here requires entanglement.';v.className='verdict';}
+  if(S-3*err>2){v.textContent='S = '+S.toFixed(2)+' ± '+err.toFixed(2)+', well above the classical ceiling even allowing for chance. No script, no pre-agreed answers, no local trick can score this. These two share one quantum state.';v.className='verdict beat';}
+  else{v.textContent='S = '+S.toFixed(2)+' ± '+err.toFixed(2)+', within classical reach. A script can land here by chance; nothing here requires entanglement.';v.className='verdict';}
   updateTally();drawChart();
 });
 
@@ -549,7 +552,7 @@ var TOUR=[
   s:function(){}},
  {t:"Now meet the imposter. The dancers just switched to 'Secret script' mode — pre-agreed answers, the best fake that's physically possible — and your data was cleared. Do exactly what you did before: Pose ×100 at several different gaps. This time the dots follow the dashed STRAIGHT LINE. Same game, different fingerprint — and no script can ever bend into a curve.",
   s:function(){setSource('classical');}},
- {t:"Back to the real entangled pair (data cleared again). Click 'Run the Bell test' — it strikes 300 poses at each of four special dial settings and combines the results into one score. In 1964, John Bell proved that ANY script scores at most 2.00. Watch the meter break the red ceiling.",
+ {t:"Back to the real entangled pair (data cleared again). Click 'Run the Bell test' — it strikes 2000 poses at each of four special dial settings and combines the results into one score. In 1964, John Bell proved that ANY script scores at most 2.00. Watch the meter break the red ceiling.",
   s:function(){setSource('quantum');}},
  {t:"And that's the whole story: a curve no straight line can imitate, and a score no script can reach. The two qubits never carried hidden answers — they share one quantum state, so the randomness itself is shared. Real versions of this experiment won the 2022 Nobel Prize in Physics. Try the Mystery box to test yourself, and read the field notes at the bottom. Tour complete!",
   s:function(){}}
