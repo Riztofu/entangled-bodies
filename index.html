@@ -350,7 +350,9 @@ function setNeedles(){
   $('readB').textContent=bVal()+'°';
 }
 function setArm(el,v){ // +1 up, -1 down, 0 neutral
-  el.style.transform=v===0?'rotate(0deg)':'rotate('+(v>0?-55:55)+'deg)';
+  // Alice's arm points right and Bob's points left, so "up" is a mirrored rotation for Bob.
+  var mirror=el.id==='armB'?-1:1;
+  el.style.transform=v===0?'rotate(0deg)':'rotate('+(v>0?-55:55)*mirror+'deg)';
 }
 
 // ---------- recording ----------
