@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entangled Bodies</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,640&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: a dark stage — two spotlit dancers up top, instruments (chart + meter) below, field notes last. */
+:root{
+  --bg:#faf9f6; --surface:#ffffff; --fg:#26232c; --muted:#6d687a; --line:#e4e1da;
+  --alice:#C2640F; --bob:#2B7FC2; --curve-q:#8a5fbf; --curve-c:#8d8798;
+  --ceiling:#b3433a; --ok:#2e7d4f; --chip:#f1efe9;
+  --display:"Fraunces",Georgia,serif; --body:"Source Sans 3",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141318; --surface:#1d1c23; --fg:#ece9e2; --muted:#9b96a6; --line:#2e2c38;
+    --alice:#D9761F; --bob:#3E8FC9; --curve-q:#a98fd6; --curve-c:#7b7589;
+    --ceiling:#d9655b; --ok:#5cb884; --chip:#26242e;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141318; --surface:#1d1c23; --fg:#ece9e2; --muted:#9b96a6; --line:#2e2c38;
+  --alice:#D9761F; --bob:#3E8FC9; --curve-q:#a98fd6; --curve-c:#7b7589;
+  --ceiling:#d9655b; --ok:#5cb884; --chip:#26242e;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding-block:28px 56px;padding-inline:20px}
+header.top{margin-bottom:22px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:var(--display);font-weight:640;font-size:clamp(34px,6vw,52px);line-height:1.05;margin:6px 0 10px;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0;font-size:17px}
+.lede strong{color:var(--fg)}
+h2{font-family:var(--display);font-weight:500;font-size:24px;margin:0 0 4px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.section{margin-top:26px}
+.subnote{color:var(--muted);font-size:14px;margin:0 0 14px}
+
+/* source picker */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px var(--body);padding:9px 16px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--bob);outline-offset:-2px}
+.src-desc{color:var(--muted);font-size:14px;margin-top:8px;min-height:1.4em}
+
+/* guided tour */
+.tour{border-left:4px solid var(--curve-q)}
+.tour-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tour-step{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.tour-text{margin:8px 0 14px;max-width:72ch;font-size:16px}
+.tour-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* stage */
+.stage{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch}
+@media (max-width:760px){.stage{grid-template-columns:1fr}}
+.dancer{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.dancer h3{margin:0;font:600 15px var(--body);letter-spacing:.04em;text-transform:uppercase}
+.dancer.alice h3{color:var(--alice)} .dancer.bob h3{color:var(--bob)}
+.figure{width:min(200px,60vw)}
+.arm-sig{transition:transform .45s cubic-bezier(.34,1.45,.5,1)}
+@media (prefers-reduced-motion: reduce){.arm-sig{transition:none}}
+.dialrow{display:flex;align-items:center;gap:10px;width:100%;max-width:280px}
+.dialrow svg{flex:0 0 auto}
+.dialrow input[type=range]{flex:1;min-width:0;accent-color:var(--fg)}
+.angle-read{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;min-width:3.2em;text-align:right}
+.outcome{font-size:13px;color:var(--muted);min-height:1.3em;font-variant-numeric:tabular-nums}
+.midcol{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;padding:8px 4px}
+button.act{appearance:none;font:700 15px var(--body);border-radius:8px;border:1px solid var(--line);
+  background:var(--fg);color:var(--bg);padding:11px 18px;cursor:pointer;white-space:nowrap}
+button.act.ghost{background:var(--surface);color:var(--fg)}
+button.act:focus-visible{outline:2px solid var(--bob);outline-offset:2px}
+button.act:disabled{opacity:.45;cursor:default}
+.callrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.callrow .lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button.call{appearance:none;font:600 13px var(--body);border:1px solid var(--line);background:var(--chip);
+  color:var(--fg);border-radius:999px;padding:5px 12px;cursor:pointer}
+button.call[aria-pressed="true"]{border-color:var(--fg);background:var(--fg);color:var(--bg)}
+.callstat{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;min-height:1.3em;text-align:center}
+
+/* results */
+.results{display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:stretch}
+@media (max-width:860px){.results{grid-template-columns:1fr}}
+.chartbox{position:relative;min-width:0}
+.chartbox svg{width:100%;height:auto;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:600 12px var(--body);
+  padding:4px 8px;border-radius:6px;transform:translate(-50%,-130%);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tally{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:14px;margin-top:8px}
+.tally b{color:var(--fg);font-variant-numeric:tabular-nums}
+.meterbox{display:flex;flex-direction:column;gap:12px}
+.meter-val{font-family:var(--display);font-size:44px;font-weight:640;line-height:1;font-variant-numeric:tabular-nums}
+.meter-val small{font-size:16px;color:var(--muted);font-family:var(--body);font-weight:600}
+.meter-track{position:relative;height:14px;border-radius:7px;background:var(--chip);border:1px solid var(--line)}
+.meter-fill{position:absolute;inset:0;border-radius:7px;background:var(--curve-q);width:0%;transition:width .6s ease;max-width:100%}
+.meter-marks{position:relative;height:34px;font-size:12px;color:var(--muted)}
+.mark{position:absolute;transform:translateX(-50%);text-align:center;line-height:1.25}
+.mark::before{content:"";display:block;width:2px;height:8px;margin:0 auto 2px;background:currentColor}
+.mark.ceiling{color:var(--ceiling);font-weight:700}
+.verdict{font-size:14px;min-height:2.8em;margin:0}
+.verdict.beat{color:var(--ok);font-weight:600}
+
+/* under the hood */
+.amps{display:grid;grid-template-columns:1fr;gap:4px}
+.hood-grid{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+@media (max-width:700px){.hood-grid{grid-template-columns:1fr}}
+.hood-note{color:var(--muted);font-size:14px;max-width:48ch}
+.sealed{font-size:14px;color:var(--muted);font-style:italic}
+
+/* field notes */
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:700px){.notes{grid-template-columns:1fr}}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.note h3{font-family:var(--display);font-weight:500;font-size:18px;margin:0 0 6px}
+.note p{margin:0;font-size:15px;color:var(--muted)}
+.note p b, .note p strong{color:var(--fg)}
+footer{margin-top:30px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">A playable Bell test · simulated with real quantum math</div>
+  <h1>Entangled Bodies</h1>
+  <p class="lede">Two dancers each hold one half of an <strong>entangled pair</strong> — two tiny quantum objects created together that stay connected. When a dancer strikes a pose, their arm snaps <strong>up</strong> or <strong>down</strong> at random, like a coin flip — yet the two flips agree with each other. This game lets you test the obvious explanation ("they planned it in advance") and watch it fail.</p>
+</header>
+
+<section class="section panel tour" aria-label="Guided tour" id="tourBox">
+  <div class="tour-head">
+    <span class="eyebrow">Guided tour</span>
+    <span class="tour-step" id="tourCount"></span>
+  </div>
+  <p class="tour-text" id="tourText"></p>
+  <div class="tour-btns">
+    <button class="act" id="tourNext">Start the tour</button>
+    <button class="act ghost" id="tourSkip">Skip — let me explore</button>
+  </div>
+</section>
+
+<section class="section" aria-label="Source">
+  <div class="seg" role="group" aria-label="What the dancers share">
+    <button id="src-q" aria-pressed="true">Entangled pair</button>
+    <button id="src-c" aria-pressed="false">Secret script</button>
+    <button id="src-m" aria-pressed="false">Mystery box</button>
+  </div>
+  <p class="src-desc" id="srcDesc">The dancers share the Bell state |Φ⁺⟩ — four live amplitudes, honestly sampled on every pose.</p>
+</section>
+
+<section class="section panel" aria-label="Stage">
+  <div class="stage">
+    <div class="dancer alice">
+      <h3>Alice</h3>
+      <svg class="figure" viewBox="0 0 160 190" aria-label="Alice dancer figure">
+        <g stroke="var(--alice)" stroke-width="6" stroke-linecap="round" fill="none">
+          <circle cx="80" cy="38" r="18" fill="var(--surface)"/>
+          <line x1="80" y1="56" x2="80" y2="120"/>
+          <line x1="80" y1="120" x2="58" y2="172"/>
+          <line x1="80" y1="120" x2="102" y2="172"/>
+          <path d="M80 72 L56 94 L68 110"/>
+          <g id="armA" class="arm-sig" style="transform-origin:80px 72px">
+            <line x1="80" y1="72" x2="128" y2="72"/>
+            <circle cx="128" cy="72" r="5" fill="var(--alice)" stroke="none"/>
+          </g>
+        </g>
+      </svg>
+      <div class="dialrow">
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <path d="M23 3 A20 20 0 0 1 23 43" fill="none" stroke="var(--line)" stroke-width="3"/>
+          <line id="needleA" x1="23" y1="23" x2="23" y2="5" stroke="var(--alice)" stroke-width="3" stroke-linecap="round" style="transform-origin:23px 23px"/>
+          <circle cx="23" cy="23" r="3" fill="var(--fg)"/>
+        </svg>
+        <input type="range" id="angleA" min="0" max="180" value="0" step="5" aria-label="Alice measurement angle">
+        <span class="angle-read" id="readA">0°</span>
+      </div>
+      <div class="outcome" id="outA">no pose yet</div>
+    </div>
+
+    <div class="midcol">
+      <button class="act" id="poseBtn">Strike a pose</button>
+      <button class="act ghost" id="pose100Btn">Pose ×100</button>
+      <div class="callrow">
+        <span class="lbl">Call it:</span>
+        <button class="call" id="callSame" aria-pressed="false">same</button>
+        <button class="call" id="callDiff" aria-pressed="false">different</button>
+      </div>
+      <div class="callstat" id="callStat">predict before you pose</div>
+    </div>
+
+    <div class="dancer bob">
+      <h3>Bob</h3>
+      <svg class="figure" viewBox="0 0 160 190" aria-label="Bob dancer figure">
+        <g stroke="var(--bob)" stroke-width="6" stroke-linecap="round" fill="none">
+          <circle cx="80" cy="38" r="18" fill="var(--surface)"/>
+          <line x1="80" y1="56" x2="80" y2="120"/>
+          <line x1="80" y1="120" x2="58" y2="172"/>
+          <line x1="80" y1="120" x2="102" y2="172"/>
+          <path d="M80 72 L104 94 L92 110"/>
+          <g id="armB" class="arm-sig" style="transform-origin:80px 72px">
+            <line x1="80" y1="72" x2="32" y2="72"/>
+            <circle cx="32" cy="72" r="5" fill="var(--bob)" stroke="none"/>
+          </g>
+        </g>
+      </svg>
+      <div class="dialrow">
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <path d="M23 3 A20 20 0 0 1 23 43" fill="none" stroke="var(--line)" stroke-width="3"/>
+          <line id="needleB" x1="23" y1="23" x2="23" y2="5" stroke="var(--bob)" stroke-width="3" stroke-linecap="round" style="transform-origin:23px 23px"/>
+          <circle cx="23" cy="23" r="3" fill="var(--fg)"/>
+        </svg>
+        <input type="range" id="angleB" min="0" max="180" value="45" step="5" aria-label="Bob measurement angle">
+        <span class="angle-read" id="readB">45°</span>
+      </div>
+      <div class="outcome" id="outB">no pose yet</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="results">
+    <div class="panel chartbox">
+      <h2>The correlation fingerprint</h2>
+      <p class="subnote">Each dot: how often the arms matched at that dial gap (Δ). Entanglement traces a <b>curve</b>; the best possible script can only draw a <b>straight line</b>. They split hardest at Δ = 45°.</p>
+      <svg id="chart" viewBox="0 0 560 300" role="img" aria-label="Correlation versus angle difference"></svg>
+      <div class="tally"><span>poses: <b id="tShots">0</b></span><span>arms matched: <b id="tSame">–</b></span></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <div class="panel meterbox">
+      <h2>Bell score</h2>
+      <p class="subnote">One number that separates physics from fakery. Measures 300 poses at each of the four canonical dial settings (0°, 90° × 45°, 135°).</p>
+      <div class="meter-val"><span id="sVal">–</span> <small>of 2.83 max</small></div>
+      <div class="meter-track"><div class="meter-fill" id="sFill"></div></div>
+      <div class="meter-marks">
+        <span class="mark ceiling" style="left:66.7%">2.00<br>classical ceiling</span>
+        <span class="mark" style="left:94.3%">2.83<br>quantum limit</span>
+      </div>
+      <button class="act" id="bellBtn">Run the Bell test</button>
+      <p class="verdict" id="verdict">Any secret script — any list of pre-agreed answers, however clever — scores 2.00 at most. That's Bell's theorem (1964).</p>
+      <button class="act ghost" id="resetBtn">Reset data</button>
+    </div>
+  </div>
+</section>
+
+<section class="section panel" aria-label="Under the hood">
+  <h2>Under the hood</h2>
+  <p class="subnote">This is not an animation pretending to be quantum. The page holds the state's four amplitudes and re-expresses them in your current dial bases, live. Posing samples from |amplitude|², exactly as a quantum computer's readout would.</p>
+  <div class="hood-grid">
+    <svg id="ampSvg" width="320" height="150" viewBox="0 0 320 150" role="img" aria-label="Live amplitudes"></svg>
+    <p class="hood-note" id="hoodNote"></p>
+  </div>
+</section>
+
+<section class="section">
+  <h2 style="margin-bottom:12px">Field notes</h2>
+  <div class="notes">
+    <div class="note"><h3>1 · What a pose is</h3>
+      <p>A <b>qubit</b> is the quantum version of a bit — instead of being plainly 0 or 1, it holds an <b>amplitude</b> (a signed number whose square is a probability) for each. "Striking a pose" is a <b>measurement</b>: it forces each qubit to answer up (+1) or down (−1), along whatever direction its dial points. The dial matters because qubits, unlike coins, can be asked the question from any angle.</p></div>
+    <div class="note"><h3>2 · Spooky agreement</h3>
+      <p>Set both dials to the same angle — any angle — and the arms <b>always match</b>, even though each arm alone is a perfect 50/50 coin flip. <b>Entanglement</b> means the two qubits don't have separate answers written down anywhere; they share one joint state, so the randomness itself is shared.</p></div>
+    <div class="note"><h3>3 · Couldn't it be a script?</h3>
+      <p>Maybe the dancers just agreed on answers beforehand — a hidden script (physicists say <b>local hidden variables</b>). A script explains same-angle agreement fine. But turn the dials <i>apart</i> and watch the chart: scripts produce correlation that fades in a straight line, while entanglement fades as a cosine curve. At Δ = 45° the gap is undeniable.</p></div>
+    <div class="note"><h3>4 · The number that settles it</h3>
+      <p>The <b>Bell score (CHSH)</b> adds up correlations from four dial settings. John Bell proved in 1964 that every possible script tops out at <b>2</b>; entangled qubits reach <b>2√2 ≈ 2.83</b>. Real experiments confirming this won the <b>2022 Nobel Prize in Physics</b>. When your meter crosses the red line, you've reproduced it — on a simulated pair of qubits, with nothing up anyone's sleeve.</p></div>
+  </div>
+</section>
+
+<footer>Built for the Qollab × IonQ quantum hackathon. 2-qubit statevector simulation — 4 complex amplitudes, Ry-rotated measurement bases, honest Born-rule sampling.</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+// ---------- quantum core (verified: E = cos(a-b), CHSH = 2.828) ----------
+var SQ=Math.SQRT1_2, D2R=Math.PI/180;
+function ry(t){var c=Math.cos(t/2),s=Math.sin(t/2);return [[c,-s],[s,c]];}
+// state: 4 real amplitudes (Phi+ with Ry stays real): |00>,|01>,|10>,|11>, Alice = left bit
+function applyGate(st,U,q){
+  var out=[0,0,0,0];
+  for(var i=0;i<4;i++){
+    var bit=q===0?(i>>1)&1:i&1;
+    for(var b=0;b<2;b++){
+      var j=q===0?((b<<1)|(i&1)):((i&2)|b);
+      out[i]+=U[bit][b]*st[j];
+    }
+  }
+  return out;
+}
+function measuredAmps(aDeg,bDeg){
+  var st=[SQ,0,0,SQ];
+  st=applyGate(st,ry(-aDeg*D2R),0);
+  st=applyGate(st,ry(-bDeg*D2R),1);
+  return st;
+}
+function quantumSample(a,b){
+  var st=measuredAmps(a,b), p=st.map(function(x){return x*x;});
+  var r=Math.random(),i=0;
+  while(i<3&&r>p[i]){r-=p[i];i++;}
+  return [((i>>1)&1)?-1:1,(i&1)?-1:1];
+}
+// best local-hidden-variable script: shared random direction lambda
+function classicalSample(a,b){
+  var lam=Math.random()*360;
+  var sgn=function(x){return Math.cos(x*D2R)>=0?1:-1;};
+  return [sgn(a-lam),sgn(b-lam)];
+}
+
+// ---------- state ----------
+var source='quantum', mysteryActual=null, mysteryRevealed=false;
+var NB=12, bins=[], shots=0, same=0;
+var call=null, callsMade=0, callsRight=0;
+function resetBins(){bins=[];for(var i=0;i<NB;i++)bins.push({sum:0,n:0});shots=0;same=0;}
+resetBins();
+
+function effSource(){return source==='mystery'?mysteryActual:source;}
+function sample(a,b){return effSource()==='classical'?classicalSample(a,b):quantumSample(a,b);}
+
+// ---------- dom ----------
+function $(id){return document.getElementById(id);}
+var angleA=$('angleA'),angleB=$('angleB');
+function aVal(){return +angleA.value;} function bVal(){return +angleB.value;}
+
+function fold(d){d=Math.abs(d)%360;if(d>180)d=360-d;return d;}
+
+// ---------- dancers ----------
+function setNeedles(){
+  $('needleA').style.transform='rotate('+aVal()+'deg)';
+  $('needleB').style.transform='rotate('+bVal()+'deg)';
+  $('readA').textContent=aVal()+'°';
+  $('readB').textContent=bVal()+'°';
+}
+function setArm(el,v){ // +1 up, -1 down, 0 neutral
+  el.style.transform=v===0?'rotate(0deg)':'rotate('+(v>0?-55:55)+'deg)';
+}
+
+// ---------- recording ----------
+function record(a,b,prod){
+  var d=fold(a-b), idx=Math.min(NB-1,Math.floor(d/(180/NB)));
+  bins[idx].sum+=prod;bins[idx].n++;
+  shots++;if(prod>0)same++;
+}
+function updateTally(){
+  $('tShots').textContent=shots;
+  $('tSame').textContent=shots?Math.round(100*same/shots)+'%':'–';
+}
+
+// ---------- chart ----------
+var CW=560,CH=300,ML=46,MR=16,MT=14,MB=40;
+function xOf(d){return ML+(d/180)*(CW-ML-MR);}
+function yOf(e){return MT+(1-(e+1)/2)*(CH-MT-MB);}
+function curvePath(fn){
+  var pts=[];
+  for(var d=0;d<=180;d+=3)pts.push((d?'L':'M')+xOf(d).toFixed(1)+' '+yOf(fn(d)).toFixed(1));
+  return pts.join(' ');
+}
+function drawChart(){
+  var s='';
+  // grid + axes
+  [-1,-0.5,0,0.5,1].forEach(function(e){
+    var y=yOf(e);
+    s+='<line x1="'+ML+'" y1="'+y+'" x2="'+(CW-MR)+'" y2="'+y+'" stroke="var(--line)" stroke-width="'+(e===0?1.5:1)+'"/>';
+    s+='<text x="'+(ML-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--body)">'+(e>0?'+':'')+e+'</text>';
+  });
+  [0,45,90,135,180].forEach(function(d){
+    var x=xOf(d);
+    s+='<line x1="'+x+'" y1="'+(CH-MB)+'" x2="'+x+'" y2="'+(CH-MB+5)+'" stroke="var(--muted)"/>';
+    s+='<text x="'+x+'" y="'+(CH-MB+19)+'" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--body)">'+d+'°</text>';
+  });
+  s+='<text x="'+((ML+CW-MR)/2)+'" y="'+(CH-4)+'" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--body)">Δ — gap between the two dials</text>';
+  s+='<text transform="translate(13 '+((MT+CH-MB)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--body)">correlation E</text>';
+  // reference curves
+  s+='<path d="'+curvePath(function(d){return Math.cos(d*D2R);})+'" fill="none" stroke="var(--curve-q)" stroke-width="2"/>';
+  s+='<path d="'+curvePath(function(d){return 1-2*d/180;})+'" fill="none" stroke="var(--curve-c)" stroke-width="2" stroke-dasharray="6 5"/>';
+  s+='<text x="'+(xOf(52))+'" y="'+(yOf(Math.cos(52*D2R))-10)+'" font-size="12" font-weight="600" fill="var(--curve-q)" font-family="var(--body)">entangled: cos Δ</text>';
+  s+='<text x="'+(xOf(96))+'" y="'+(yOf(1-2*96/180)+20)+'" font-size="12" font-weight="600" fill="var(--curve-c)" font-family="var(--body)">best possible script</text>';
+  // data dots
+  for(var i=0;i<NB;i++){
+    if(!bins[i].n)continue;
+    var d=(i+0.5)*(180/NB), e=bins[i].sum/bins[i].n;
+    s+='<circle cx="'+xOf(d).toFixed(1)+'" cy="'+yOf(e).toFixed(1)+'" r="5.5" fill="var(--fg)" stroke="var(--surface)" stroke-width="2" data-bin="'+i+'" style="cursor:pointer"/>';
+  }
+  $('chart').innerHTML=s;
+}
+// tooltip
+$('chart').addEventListener('mousemove',function(ev){
+  var t=ev.target,tip=$('tip');
+  if(t.tagName==='circle'&&t.hasAttribute('data-bin')){
+    var i=+t.getAttribute('data-bin'),bw=180/NB;
+    tip.textContent='Δ '+(i*bw)+'–'+((i+1)*bw)+'° · E = '+(bins[i].sum/bins[i].n).toFixed(2)+' · n = '+bins[i].n;
+    var r=$('chart').getBoundingClientRect(),cr=t.getBoundingClientRect();
+    tip.style.left=(cr.left+cr.width/2-r.left)+'px';
+    tip.style.top=(cr.top-r.top+14)+'px';
+    tip.hidden=false;
+  } else tip.hidden=true;
+});
+$('chart').addEventListener('mouseleave',function(){$('tip').hidden=true;});
+
+// ---------- amplitudes panel ----------
+function drawAmps(){
+  var svg=$('ampSvg'),note=$('hoodNote'),src=source;
+  if(src==='mystery'&&!mysteryRevealed){
+    svg.innerHTML='<text x="160" y="80" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="var(--body)" font-style="italic">sealed until you reveal the mystery box</text>';
+    note.textContent='No peeking. Decide from the evidence — the chart and the Bell score — then reveal.';
+    return;
+  }
+  var eff=effSource();
+  if(eff==='classical'){
+    svg.innerHTML='<text x="160" y="72" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="var(--body)">no amplitudes here —</text>'+
+      '<text x="160" y="92" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="var(--body)">just a hidden script: A = sign cos(a−λ)</text>';
+    note.textContent='In script mode the dancers carry pre-agreed answers (a shared random direction λ). It imitates quantum correlation as well as anything classical can — which is exactly what the Bell test exposes.';
+    return;
+  }
+  var amps=measuredAmps(aVal(),bVal());
+  var labels=['|00⟩','|01⟩','|10⟩','|11⟩'];
+  var zero=75,hmax=52,bw=34,gap=38,x0=48,s='';
+  s+='<line x1="30" y1="'+zero+'" x2="310" y2="'+zero+'" stroke="var(--line)"/>';
+  for(var i=0;i<4;i++){
+    var x=x0+i*(bw+gap),h=amps[i]*hmax;
+    var y=h>=0?zero-h:zero, hh=Math.abs(h);
+    s+='<rect x="'+x+'" y="'+y.toFixed(1)+'" width="'+bw+'" height="'+Math.max(hh,0.5).toFixed(1)+'" rx="3" fill="var(--curve-q)"/>';
+    s+='<text x="'+(x+bw/2)+'" y="140" text-anchor="middle" font-size="13" fill="var(--fg)" font-family="var(--body)">'+labels[i]+'</text>';
+    s+='<text x="'+(x+bw/2)+'" y="'+(h>=0?(zero-h-6):(zero+hh+13)).toFixed(1)+'" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--body)">'+amps[i].toFixed(2)+'</text>';
+  }
+  svg.innerHTML=s;
+  note.textContent='The Bell state |Φ⁺⟩, re-expressed in the bases your dials select. Amplitudes can go negative — probabilities (their squares) can\'t. Each pose samples one of these four outcomes with probability amplitude².';
+}
+
+// ---------- actions ----------
+function clearCall(){call=null;$('callSame').setAttribute('aria-pressed','false');$('callDiff').setAttribute('aria-pressed','false');}
+$('callSame').addEventListener('click',function(){call='same';this.setAttribute('aria-pressed','true');$('callDiff').setAttribute('aria-pressed','false');});
+$('callDiff').addEventListener('click',function(){call='diff';this.setAttribute('aria-pressed','true');$('callSame').setAttribute('aria-pressed','false');});
+
+function pose(){
+  var a=aVal(),b=bVal(),r=sample(a,b);
+  setArm($('armA'),r[0]);setArm($('armB'),r[1]);
+  $('outA').textContent='arm '+(r[0]>0?'UP (+1)':'DOWN (−1)');
+  $('outB').textContent='arm '+(r[1]>0?'UP (+1)':'DOWN (−1)');
+  record(a,b,r[0]*r[1]);
+  if(call){
+    callsMade++;
+    var matched=r[0]*r[1]>0, right=(call==='same')===matched;
+    if(right)callsRight++;
+    $('callStat').textContent=(right?'✓ called it':'✗ missed')+' · '+callsRight+'/'+callsMade+' right';
+    clearCall();
+  }
+  updateTally();drawChart();
+}
+$('poseBtn').addEventListener('click',pose);
+$('pose100Btn').addEventListener('click',function(){
+  var a=aVal(),b=bVal(),last=[1,1];
+  for(var k=0;k<100;k++){last=sample(a,b);record(a,b,last[0]*last[1]);}
+  setArm($('armA'),last[0]);setArm($('armB'),last[1]);
+  $('outA').textContent='last of 100: '+(last[0]>0?'UP':'DOWN');
+  $('outB').textContent='last of 100: '+(last[1]>0?'UP':'DOWN');
+  updateTally();drawChart();
+});
+
+$('bellBtn').addEventListener('click',function(){
+  var settings=[[0,45,1],[90,45,1],[90,135,1],[0,135,-1]],S=0,N=300;
+  settings.forEach(function(st){
+    var sum=0;
+    for(var k=0;k<N;k++){var r=sample(st[0],st[1]);sum+=r[0]*r[1];record(st[0],st[1],r[0]*r[1]);}
+    S+=st[2]*(sum/N);
+  });
+  $('sVal').textContent=S.toFixed(2);
+  $('sFill').style.width=Math.max(0,Math.min(100,(S/3)*100))+'%';
+  var v=$('verdict');
+  if(S>2.05){v.textContent='S = '+S.toFixed(2)+' — above the classical ceiling. No script, no pre-agreed answers, no local trick can score this. These two share one quantum state.';v.className='verdict beat';}
+  else{v.textContent='S = '+S.toFixed(2)+' — within classical reach. A humble script could do this; nothing here requires entanglement.';v.className='verdict';}
+  updateTally();drawChart();
+});
+
+$('resetBtn').addEventListener('click',function(){
+  resetBins();updateTally();drawChart();
+  $('sVal').textContent='–';$('sFill').style.width='0%';
+  $('verdict').textContent='Any secret script — any list of pre-agreed answers, however clever — scores 2.00 at most. That\'s Bell\'s theorem (1964).';
+  $('verdict').className='verdict';
+  callsMade=0;callsRight=0;$('callStat').textContent='predict before you pose';clearCall();
+  setArm($('armA'),0);setArm($('armB'),0);
+  $('outA').textContent='no pose yet';$('outB').textContent='no pose yet';
+});
+
+// ---------- source switching ----------
+var descs={
+  quantum:'The dancers share the Bell state |Φ⁺⟩ — four live amplitudes, honestly sampled on every pose.',
+  classical:'The dancers carry a secret script: pre-agreed answers from a shared random direction. The best fake that physics allows.',
+  mystery:'One of the two, chosen at random and hidden. Gather evidence, then reveal.'
+};
+function setSource(s){
+  source=s;
+  $('src-q').setAttribute('aria-pressed',s==='quantum');
+  $('src-c').setAttribute('aria-pressed',s==='classical');
+  $('src-m').setAttribute('aria-pressed',s==='mystery');
+  if(s==='mystery'){
+    mysteryActual=Math.random()<0.5?'quantum':'classical';
+    mysteryRevealed=false;
+    $('srcDesc').innerHTML=descs.mystery+' <button class="call" id="revealBtn">reveal</button>';
+    $('revealBtn').addEventListener('click',function(){
+      mysteryRevealed=true;
+      $('srcDesc').textContent='The box held: '+(mysteryActual==='quantum'?'an ENTANGLED PAIR.':'a SECRET SCRIPT.')+' Did the evidence tell you?';
+      drawAmps();
+    });
+  } else {
+    $('srcDesc').textContent=descs[s];
+  }
+  $('resetBtn').click();
+  drawAmps();
+}
+$('src-q').addEventListener('click',function(){setSource('quantum');});
+$('src-c').addEventListener('click',function(){setSource('classical');});
+$('src-m').addEventListener('click',function(){setSource('mystery');});
+
+// ---------- live updates ----------
+function onDial(){setNeedles();drawAmps();}
+angleA.addEventListener('input',onDial);
+angleB.addEventListener('input',onDial);
+
+// ---------- guided tour ----------
+var TOUR=[
+ {t:"The setup, in plain words: a machine makes two tiny quantum particles together and hands one to each dancer. Each particle is a qubit — a quantum bit. Unlike a normal bit, a qubit only becomes 0 or 1 when you ask it, and you can ask the question from different angles. The dial under each dancer IS that angle, and 'striking a pose' is asking. The answer is always just arm UP (+1) or arm DOWN (−1).",
+  s:function(){}},
+ {t:"Both dials are now set to 0° — the dancers are asking their qubits the exact same question. Click 'Strike a pose' five or six times and watch the arms. Each dancer's answer is random... but the two of them ALWAYS match. Hit Next once you've seen it happen.",
+  s:function(){angleA.value=0;angleB.value=0;onDial();}},
+ {t:"That always-matching is the whole mystery. The sensible explanation: the two particles secretly agreed on their answers before they were separated — a script. Einstein believed something like this. It sounds completely reasonable. Your job for the rest of the tour is to catch the script red-handed.",
+  s:function(){}},
+ {t:"Bob's dial just moved to 90° — he's now asking a DIFFERENT question than Alice. Strike a few poses: the arms only match about half the time now. So the gap between the two dials (called Δ, 'delta') controls how often they agree. That gap is the knob that will expose the truth.",
+  s:function(){angleA.value=0;angleB.value=90;onDial();}},
+ {t:"Time to collect evidence. Click 'Pose ×100', then move one dial to a new angle and click it again — try four or five different gaps. Each dot on the chart below shows how correlated the answers were at that gap. Your dots should hug the solid CURVE, the one labeled 'entangled'.",
+  s:function(){}},
+ {t:"Now meet the imposter. The dancers just switched to 'Secret script' mode — pre-agreed answers, the best fake that's physically possible — and your data was cleared. Do exactly what you did before: Pose ×100 at several different gaps. This time the dots follow the dashed STRAIGHT LINE. Same game, different fingerprint — and no script can ever bend into a curve.",
+  s:function(){setSource('classical');}},
+ {t:"Back to the real entangled pair (data cleared again). Click 'Run the Bell test' — it strikes 300 poses at each of four special dial settings and combines the results into one score. In 1964, John Bell proved that ANY script scores at most 2.00. Watch the meter break the red ceiling.",
+  s:function(){setSource('quantum');}},
+ {t:"And that's the whole story: a curve no straight line can imitate, and a score no script can reach. The two qubits never carried hidden answers — they share one quantum state, so the randomness itself is shared. Real versions of this experiment won the 2022 Nobel Prize in Physics. Try the Mystery box to test yourself, and read the field notes at the bottom. Tour complete!",
+  s:function(){}}
+];
+var tourAt=-1;
+function tourShow(){
+  $('tourText').textContent=TOUR[tourAt].t;
+  $('tourCount').textContent='step '+(tourAt+1)+' of '+TOUR.length;
+  $('tourNext').textContent=tourAt===TOUR.length-1?'Finish':'Next';
+  TOUR[tourAt].s();
+}
+$('tourNext').addEventListener('click',function(){
+  tourAt++;
+  if(tourAt>=TOUR.length){$('tourBox').hidden=true;return;}
+  $('tourSkip').textContent='Skip the rest';
+  tourShow();
+});
+$('tourSkip').addEventListener('click',function(){$('tourBox').hidden=true;});
+
+// ---------- boot ----------
+function start(){
+  setNeedles();drawChart();drawAmps();updateTally();
+  $('tourText').textContent='New here? This two-minute tour walks you through what the game is showing, one click at a time. No physics background needed.';
+  $('tourCount').textContent='';
+}
+if(window.claude&&window.claude.hot&&window.claude.hot.ready){window.claude.hot.ready(start);}else{start();}
+})();
+</script>
+
+</body>
+</html>
